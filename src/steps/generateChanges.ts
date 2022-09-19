@@ -225,18 +225,32 @@ function resolveImportPath(importPath: string) {
   return;
 }
 
-function isFile(path: string) {
-  try {
-    return statSync(path).isFile();
-  } catch (e) {
-    return false;
+const resultCache: Record<string, { file: boolean; directory: boolean }> = {};
+function checkPath(path: string) {
+  if (resultCache[path]) {
+    return resultCache[path];
   }
+
+  try {
+    const statResult = statSync(path);
+    resultCache[path] = {
+      file: statResult.isFile(),
+      directory: statResult.isDirectory(),
+    };
+  } catch (e) {
+    resultCache[path] = {
+      file: false,
+      directory: false,
+    };
+  }
+
+  return resultCache[path];
+}
+
+function isFile(path: string) {
+  return checkPath(path).file;
 }
 
 function isDirectory(path: string) {
-  try {
-    return statSync(path).isDirectory();
-  } catch (e) {
-    return false;
-  }
+  return checkPath(path).directory;
 }
