@@ -55,6 +55,20 @@ const loadTransformer = (path: string | undefined, config: unknown) => {
   }
 };
 
+/** Try to find out whether we should activate ES modules for ts-jest */
+const probeESM = () => {
+  try {
+    const vm = require("vm");
+    if (vm?.Module !== undefined) {
+      return true;
+    }
+    if (process.env.npm_package_type === "module") {
+      return true;
+    }
+  } catch (e) {}
+  return undefined;
+};
+
 /**
  * Returns a hash code from a string
  * @see http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
@@ -74,7 +88,9 @@ const createTransformer = (
 ): Transformer<TransformerConfig> => {
   const { tsconfig, tsJest, tsJestConfig } = config || {};
   const otherTransformer =
-    tsJest !== "" ? loadTransformer(tsJest, tsJestConfig ?? {}) : undefined;
+    tsJest !== ""
+      ? loadTransformer(tsJest, { useESM: probeESM(), ...(tsJestConfig ?? {}) })
+      : undefined;
 
   const projectPath = tsconfig || env.TS_NODE_PROJECT || "tsconfig.json";
   const tsConfig = loadTSConfig(projectPath);
